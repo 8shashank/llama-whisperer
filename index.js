@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* eslint-disable no-await-in-loop */
-// Get command line arguments using yargs
+
 const fs = require('fs');
 const yargs = require('yargs/yargs');
 const readline = require('readline');
@@ -54,13 +54,13 @@ async function ask(instruction) {
 
   let shouldStop = false;
   while (!shouldStop) {
-    const response = await fetch('http://127.0.0.1:3000/next-token');
+    const response = await fetch(`http://127.0.0.1:${serverPort}/next-token`);
     const result = await response.json();
     const nextToken = result.content;
 
     shouldStop = result.stop;
     if (stopWords.some((word) => nextToken.includes(word))) {
-      await fetch('http://127.0.0.1:3000/next-token?stop=true');
+      await fetch(`http://127.0.0.1:${serverPort}/next-token?stop=true`);
       shouldStop = true;
     }
     process.stdout.write(nextToken);
@@ -86,7 +86,6 @@ async function readFile(file) {
 }
 
 function sanitizeLines(lines) {
-  // string without [ and ] replaced
   const sanitizedText = lines.map((line) => line.replace(/\s\s+/g, ' ').trim()).filter((line) => line && !line.includes('Script started on') && !line.startsWith('Script done on'));
   return sanitizedText;
 }
@@ -97,7 +96,7 @@ async function main() {
   process.exit();
 }
 
-const childArgs = ['-m', modelPath, '--ctx_size', '2048', '--port', '3000'];
+const childArgs = ['-m', modelPath, '--ctx_size', '2048', '--port', serverPort];
 
 const abortController = new AbortController();
 const { signal } = abortController;
@@ -107,7 +106,6 @@ const child = childProcess.execFile(serverPath, childArgs, {
   if (error) {
     process.stderr.write(error.toString());
     process.exit();
-    return;
   }
   if (stdout) {
     process.stdout.write(stdout);
